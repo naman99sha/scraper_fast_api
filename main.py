@@ -14,8 +14,14 @@ def get_token_header(token: str):
     
     
 @app.post("/scrape")
-def scrape_data(token = Depends(get_token_header), request = Body(...)):
-    scraper = Scraper(pages_limit=request["pages_limit"], proxy=request["proxy"], token=token)
+def scrape_data(token = Depends(get_token_header), request = Body(default=None)):
+    if request and request.get("pages_limit"):
+        if request.get("proxy"):
+            scraper = Scraper(pages_limit=request["pages_limit"], proxy=request["proxy"], token=token)
+        else:
+            scraper = Scraper(pages_limit=request["pages_limit"], token=token)
+    else:
+        scraper = Scraper(token=token)
     scraped_data = scraper.scrape()
 
     db_handler = DatabaseHandler()
