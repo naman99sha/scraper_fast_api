@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from scraper import Scraper
 from pydantic import BaseModel
 from database import DatabaseHandler
+from notifier import Notifier
 import os
 
 app = FastAPI()
@@ -24,7 +25,10 @@ def scrape_data(settings: ScrapeSettings):
     db_handler = DatabaseHandler()
     updated_count = db_handler.update_database(scraped_data)
 
-    return {"message": f"successfully scraped"}
+    notifier = Notifier()
+    notifier.notify(updated_count)
+
+    return {"message": f"{updated_count} products scraped and updated."}
 
 if __name__ == "__main__":
     import uvicorn
