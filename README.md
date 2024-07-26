@@ -6,7 +6,7 @@ Steps to run this project:
  - In postman or any other similar tool pass the following post request:
     -> url = localhost:8000/scrape
     -> authentication: Bearer token = abhjgnagoga
-    -> body = {
+    -> body(optional) = {
                 "pages_limit": 1,
                 "proxy": null
             }
