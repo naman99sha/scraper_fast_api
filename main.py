@@ -1,6 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Body
 from scraper import Scraper
-from pydantic import BaseModel
 from database import DatabaseHandler
 from notifier import Notifier
 import os
@@ -9,17 +8,14 @@ app = FastAPI()
 
 API_TOKEN = "abhjgnagoga"
 
-def get_token_header(token):
-    if str(token) != API_TOKEN:
+def get_token_header(token: str):
+    if token != API_TOKEN:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     
-class ScrapeSettings(BaseModel):
-    pages_limit: int = 5
-    proxy: str = None
     
-@app.post("/scrape", dependencies=[Depends(get_token_header)])
-def scrape_data(settings: ScrapeSettings):
-    scraper = Scraper(pages_limit=settings.pages_limit, proxy=settings.proxy)
+@app.post("/scrape")
+def scrape_data(token = Depends(get_token_header), request = Body(...)):
+    scraper = Scraper(pages_limit=request["pages_limit"], proxy=request["proxy"], token=token)
     scraped_data = scraper.scrape()
 
     db_handler = DatabaseHandler()

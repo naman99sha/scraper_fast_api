@@ -22,6 +22,7 @@ class DatabaseHandler:
         updated_count = 0
 
         for product in products:
+            print(product)
             cached_product = self.cache.get(product["product_title"])
             if cached_product and cached_product['product_price'] == product['product_price']:
                 continue

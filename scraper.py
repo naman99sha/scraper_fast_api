@@ -5,19 +5,21 @@ import time
 
 class Scraper:
     #constructor to initialize url and other information
-    def __init__(self, pages_limit=5, proxy=None, max_retries=3, retry_delays=5):
+    def __init__(self, pages_limit=5, proxy=None, max_retries=3, retry_delays=5, token="abhjgnagoga"):
         self.base_url = "https://dentalstall.com/shop/"
         self.pages_limit = pages_limit
         self.proxy = proxy
         self.proxies = {"http": proxy, "https": proxy} if proxy else None
         self.max_retries = max_retries
         self.retry_delays = retry_delays
+        self.token = token
 
     #fetch page function
     def fetch_page(self, url):
         for attempt in range(self.max_retries):
             try:
-                response = requests.get(url, proxies=self.proxies)
+                headers = {"Authorization": f"Bearer {self.token}"}
+                response = requests.get(url, proxies=self.proxies, headers=headers)
                 response.raise_for_status()
                 return response.content
             except Exception as e:
@@ -31,38 +33,41 @@ class Scraper:
     
     def scrape(self):
         products = []
-        page = 2
-        url = f"{self.base_url}page/{page}/"
-        content = self.fetch_page(url)
-        if content:
-            soup = BeautifulSoup(content, "html.parser")
-            for product_card in soup.select("li.product"):
-                title_tag = product_card.select_one(".woo-loop-product__title a")
-                title = title_tag["href"]
-                product_name = title.split("/")[-2].replace("-"," ")
+        for page in range(1, self.pages_limit+1):
+            if page == 1:
+                url = f"{self.base_url}/"
+            else:
+                url = f"{self.base_url}page/{page}/"
+            content = self.fetch_page(url)
+            if content:
+                soup = BeautifulSoup(content, "html.parser")
+                for product_card in soup.select("li.product"):
+                    title_tag = product_card.select_one(".woo-loop-product__title a")
+                    title = title_tag["href"]
+                    product_name = title.split("/")[-2].replace("-"," ")
 
-                price_tag = product_card.select_one(".price ins .woocommerce-Price-amount")
-                if price_tag:
-                    price = price_tag.get_text(strip=True).replace("₹", "")
-                else:
-                    price_tag = product_card.select_one(".price .woocommerce-Price-amount")
-                    price = price_tag.get_text(strip=True).replace("₹", "")
+                    price_tag = product_card.select_one(".price ins .woocommerce-Price-amount")
+                    if price_tag:
+                        price = price_tag.get_text(strip=True).replace("₹", "")
+                    else:
+                        price_tag = product_card.select_one(".price .woocommerce-Price-amount")
+                        price = price_tag.get_text(strip=True).replace("₹", "")
 
-                image_tag = product_card.select_one("img.attachment-woocommerce_thumbnail")
-                image_url = image_tag.get("data-lazy-src", image_tag.get("src"))
+                    image_tag = product_card.select_one("img.attachment-woocommerce_thumbnail")
+                    image_url = image_tag.get("data-lazy-src", image_tag.get("src"))
 
-                image_path = self.download_image(image_url, product_name)
-
-                products.append({
-                    "product_name": product_name,
-                    "product_price": float(price.replace(",", "")),  # Handle comma in price if any
-                    "path_to_image": image_path
-                })
+                    image_path = self.download_image(image_url, product_name, page)
+                    
+                    products.append({
+                        "product_title": product_name,
+                        "product_price": float(price.replace(",", "")),  # Handle comma in price if any
+                        "path_to_image": image_path
+                    })
         return products
 
-    def download_image(self, url, title):
+    def download_image(self, url, title, page):
         response = requests.get(url, stream=True)
-        image_path = f"images/{title.replace('/', '_').replace(' ', '_')}.jpg"
+        image_path = f"images/page_{page}/{title.replace('/', '_').replace(' ', '_')}.jpg"
         os.makedirs(os.path.dirname(image_path), exist_ok=True)
         with open(image_path, 'wb') as out_file:
             out_file.write(response.content)
