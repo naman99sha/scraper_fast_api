@@ -15,7 +15,6 @@ class Scraper:
 
     #fetch page function
     def fetch_page(self, url):
-        headers = {"Authorization": "Bearer tokenabhjag"}
         for attempt in range(self.max_retries):
             try:
                 response = requests.get(url, headers=headers)
@@ -50,18 +49,24 @@ class Scraper:
                     price = price_tag.get_text(strip=True).replace("₹", "")
 
                 image_tag = product_card.select_one("img.attachment-woocommerce_thumbnail")
-                image_url = image_tag["src"]
+                image_url = image_tag.get("data-lazy-src", image_tag.get("src"))
+
+                image_path = self.download_image(image_url, product_name)
 
                 products.append({
                     "product_name": product_name,
                     "product_price": float(price.replace(",", "")),  # Handle comma in price if any
-                    "path_to_image": ""
+                    "path_to_image": image_path
                 })
-                
+        return products
 
-obj = Scraper()
-obj.scrape()
-
+    def download_image(self, url, title):
+        response = requests.get(url, stream=True)
+        image_path = f"images/{title.replace('/', '_').replace(' ', '_')}.jpg"
+        os.makedirs(os.path.dirname(image_path), exist_ok=True)
+        with open(image_path, 'wb') as out_file:
+            out_file.write(response.content)
+        return image_path                
 
 # <h2 class="woo-loop-product__title"><a href="https://dentalstall.com/product/3m-espe-sof-lex-finishing-strips-refills/">3m Espe Sof-Lex Finishing Str...</a></h2>
 # <img loading="lazy" width="300" height="300" src="https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill-300x300.jpg" class="attachment-woocommerce_thumbnail size-woocommerce_thumbnail entered lazyloaded" alt="3m Espe Sof-Lex Finishing Strips - Refills - Dentalstall India" decoding="async" data-lazy-srcset="https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill-300x300.jpg 300w, https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill-100x100.jpg 100w, https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill-150x150.jpg 150w, https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill.jpg 600w" data-lazy-sizes="(max-width: 300px) 100vw, 300px" title="3m Espe Sof-Lex Finishing Strips - Refills - Dentalstall India" data-lazy-src="https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill-300x300.jpg" data-ll-status="loaded" sizes="(max-width: 300px) 100vw, 300px" srcset="https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill-300x300.jpg 300w, https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill-100x100.jpg 100w, https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill-150x150.jpg 150w, https://dentalstall.com/wp-content/uploads/2023/03/3m_espe_sof-lex_finishing_strips_-_refill.jpg 600w">
