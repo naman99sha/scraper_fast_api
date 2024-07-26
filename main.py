@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from scraper import Scraper
 from pydantic import BaseModel
+from database import DatabaseHandler
 import os
 
 app = FastAPI()
@@ -19,6 +20,9 @@ class ScrapeSettings(BaseModel):
 def scrape_data(settings: ScrapeSettings):
     scraper = Scraper(pages_limit=settings.pages_limit, proxy=settings.proxy)
     scraped_data = scraper.scrape()
+
+    db_handler = DatabaseHandler()
+    updated_count = db_handler.update_database(scraped_data)
 
     return {"message": f"successfully scraped"}
 
