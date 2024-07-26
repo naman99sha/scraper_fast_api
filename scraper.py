@@ -17,7 +17,7 @@ class Scraper:
     def fetch_page(self, url):
         for attempt in range(self.max_retries):
             try:
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, proxies=self.proxies)
                 response.raise_for_status()
                 return response.content
             except Exception as e:
